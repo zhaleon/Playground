@@ -1,0 +1,28 @@
+# .bazelrc
+
+build --cxxopt="-std=c++23"
+build --host_cxxopt="-std=c++20"
+
+# Default flags for all builds
+common --copt=-Wall                # always enable all warnings
+common --copt=-Wextra
+common --cxxopt=-std=c++23
+
+# Debug build: lots of asserts, no optimization
+build:dbg   --copt=-O0
+build:dbg   --copt=-g3
+build:dbg   --cxxopt=-DDEBUG
+
+# Sanitizers
+build:asan --copt=-fsanitize=address,undefined
+
+# Release build: optimize for speed
+build:opt   --copt=-O3
+build:opt   --copt=-DNDEBUG
+build:opt   --copt=-march=native
+build:opt   --linkopt=-s          # strip symbols
+
+# Instruction to Bazel which “flavor” to pick by default
+build --config=opt
+test  --config=dbg
+
