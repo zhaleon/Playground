@@ -1,7 +1,7 @@
 #include "tiny_vector.hpp"
 #include <stdlib.h>
 
-int main() {
+void random_push_pop() {
     tiny::vector<char> v;
 
     const int n_ops = 8 * 1024 * 1024;
@@ -14,7 +14,11 @@ int main() {
             v.push_back(i & 0xFF);
         }
     }
+}
 
+int main() {
+    srand(time(nullptr));
+    random_push_pop();
     return 0;
 }
 
