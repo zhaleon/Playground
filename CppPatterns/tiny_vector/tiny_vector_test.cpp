@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
-/* #include <fuzzer/FuzzedDataProvider.h> */
 #include "fuzztest/fuzztest.h"
 
 #include "tiny_vector.hpp"
+
+#include <memory>
 
 // bazel test --config=asan --test_output=all tiny_vector_test --jobs=32
 
@@ -41,6 +42,10 @@ TEST(TinyVectorTest, BasicTest) {
 
     for (int i : v) {
         EXPECT_EQ(i, i);
+    }
+
+    for (int i = 0; i < N_ELEMS; ++i) {
+        v.emplace_back(i);
     }
 }
 
@@ -98,6 +103,40 @@ TEST(TinyVectorTest, NoDefaultConstructor) {
     }
 
     auto a = std::move(v);
+}
+
+TEST(TinyVectorTest, NoDoubleFreeMove) {
+    tiny::vector<std::unique_ptr<int>> v;
+    for (int i = 0; i < 10000; ++i) {
+        v.push_back(std::make_unique<int>(i));
+    }
+
+    auto a = std::move(v);
+}
+
+TEST(TinyVectorTest, UncopyableContainerElement) {
+    tiny::vector<std::unique_ptr<int>> v;
+    for (int i = 0; i < 10000; ++i) {
+        v.push_back(std::make_unique<int>(i));
+    }
+}
+
+TEST(TinyVectorTest, AtSizeThrowsError) {
+    tiny::vector<int> v;
+    v.push_back(0);
+    EXPECT_THROW(v.at(1), std::out_of_range);
+}
+
+TEST(TinyVectorTest, EmptyPopThrows) {
+    tiny::vector<int> v;
+    EXPECT_THROW(v.pop_back(), std::runtime_error);
+}
+
+TEST(TinyVectorTest, BadResizeThrows) {
+    tiny::vector<int> v;
+    v.push_back(0);
+    v.push_back(1);
+    EXPECT_THROW(v.resize(1), std::out_of_range);
 }
 
 void FuzzTest(int i) {

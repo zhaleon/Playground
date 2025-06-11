@@ -15,10 +15,18 @@
  *
  * add noexcept on anything that cannot throw a c++ exception out of the body
  *
+ * edge cases:
+ *  - push_back failing with tiny::vector<std::unique_ptr<T>>, unique_ptr doesn't have a copy ctor
+ *  - container elements not copyable, cannot use std::unitialized_copy for copy ctor + assign
+ *    (this just fails at compile time, which is what it is supposed to do, but clang's vector
+ *    throws a different error)
+ *
  * TODO
  *  - custom allocator
  *  - implement the other infinite functions for std::vector
  *  - reverse iterator methods
+ *  - use concepts "requires copy_constructible" to have std::is_copy_assignable be correct
+ *    alternatively use the older SFINAE trick
  */
 
 namespace tiny {
@@ -87,7 +95,7 @@ public:
         ++end_;
     }
 
-    void emplace_back(T&& value) {
+    void push_back(T&& value) {
         if (end_ == end_cap_) {
             reallocate();
         }
@@ -96,7 +104,26 @@ public:
         ++end_;
     }
 
+    template<typename... Args>
+    void emplace_back(Args&&... args) {
+        if (end_ == end_cap_) {
+            reallocate();
+        }
+
+        std::allocator_traits<std::allocator<T>>::construct(
+            m_allocator, 
+            end_, 
+            std::forward<Args>(args)...
+        );
+
+        ++end_;
+    }
+
     void pop_back() {
+        if (end_ == begin_) {
+            throw std::runtime_error("end_ == begin_");
+        }
+
         std::allocator_traits<std::allocator<T>>::destroy(m_allocator, end_ - 1);
         --end_;
     }
@@ -174,7 +201,8 @@ private:
     void reallocate() {
         const size_t m_size = end_cap_ - begin_;
         T* new_data = m_allocator.allocate(m_size * 2);
-        std::uninitialized_copy(begin_, end_, new_data);
+        /* std::uninitialized_copy(begin_, end_, new_data); */
+        std::uninitialized_move(begin_, end_, new_data);
         m_allocator.deallocate(begin_, m_size);
 
         begin_ = new_data;

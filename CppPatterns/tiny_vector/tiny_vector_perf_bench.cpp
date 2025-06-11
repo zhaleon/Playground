@@ -1,6 +1,7 @@
 #include "tiny_vector.hpp"
 #include <stdlib.h>
 #include <ctime>
+#include <vector>
 
 void random_push_pop() {
     tiny::vector<char> v;
@@ -20,6 +21,14 @@ void random_push_pop() {
 int main() {
     srand(time(nullptr));
     random_push_pop();
+
+
+    tiny::vector<std::unique_ptr<int>> v, w;
+    /* std::vector<std::unique_ptr<int>> v, w; */
+    v.push_back(std::make_unique<int>(0));
+
+    /* w = v; */
+
     return 0;
 }
 
