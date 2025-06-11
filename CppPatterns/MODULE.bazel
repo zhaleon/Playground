@@ -33,7 +33,13 @@ bazel_dep(
     version = "1.17.0",
 )
 
-bazel_dep(
-    name    = "rules_fuzzing",
-    version = "0.5.2",
-)
+# bazel_dep(
+#     name    = "rules_fuzzing",
+#     version = "0.5.2",
+# )
+
+# bazel_dep(
+#     name = "fuzztest",
+#     version = "20241028.0",
+# )
+bazel_dep(name = "fuzztest", version = "20250214.0")

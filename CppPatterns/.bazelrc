@@ -26,3 +26,4 @@ build:opt   --linkopt=-s          # strip symbols
 build --config=opt
 test  --config=dbg
 
+try-import %workspace%/fuzztest.bazelrc

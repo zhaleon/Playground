@@ -10,11 +10,23 @@ cc_test(
     srcs = ["tiny_vector_test.cpp"],
     deps = [
         ":tiny_vector",
-        "@googletest//:gtest_main"
+        # "@googletest//:gtest_main",
+        "@googletest//:gtest",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
     linkopts = [
         "-fsanitize=address",
-        "-fsanitize=undefined"
+        "-fsanitize=undefined",
+    ],
+    size = "small",
+)
+
+cc_test(
+    name = "tiny_vector_perf_bench",
+    srcs = ["tiny_vector_perf_bench.cpp"],
+    deps = [
+        ":tiny_vector",
     ],
     size = "small",
 )

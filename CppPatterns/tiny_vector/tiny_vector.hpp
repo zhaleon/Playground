@@ -2,11 +2,32 @@
 
 #include <memory>
 #include <stdexcept>
+#include <utility>
+
+/*
+ * Rule of 0/3/6/6
+ *
+ * std::allocator returns uninitialized memory, need to initialize the memory to a type before assign,
+ * meaning use std::uninitialized_copy instead of memcpy and also need to use std::allocator_traits
+ * 
+ * std::allocator_traits<std::allocator<T>>. The old api of std::allocator used to have
+ * everything contained inside the traits. The reason to separate it is
+ *
+ * add noexcept on anything that cannot throw a c++ exception out of the body
+ *
+ * TODO
+ *  - custom allocator
+ *  - implement the other infinite functions for std::vector
+ *  - reverse iterator methods
+ */
 
 namespace tiny {
 
-template<typename T>
+template<typename T, typename allocator_type = std::allocator<T>>
 class vector {
+    using iterator = T*;
+    using const_iterator = const T*;
+
 public:    
     vector() {
         begin_ = m_allocator.allocate(1);
@@ -37,14 +58,18 @@ public:
     }
 
     // move rules
-    vector(vector &&o) : 
+    vector(vector &&o) noexcept : 
         m_allocator(std::move(o.m_allocator)),
         begin_(std::exchange(o.begin_, nullptr)),
         end_(std::exchange(o.end_, nullptr)),
         end_cap_(std::exchange(o.end_cap_, nullptr))
     {}
 
-    vector& operator=(vector&& o) {
+    vector& operator=(vector&& o) noexcept {
+        if (this == &o) {
+            return *this;
+        }
+
         m_allocator = std::move(o.m_allocator);
         begin_ = std::exchange(o.begin_, nullptr);
         end_ = std::exchange(o.end_, nullptr);
@@ -71,9 +96,18 @@ public:
         ++end_;
     }
 
+    void pop_back() {
+        std::allocator_traits<std::allocator<T>>::destroy(m_allocator, end_ - 1);
+        --end_;
+    }
+
+    size_t size() noexcept {
+        return end_ - begin_;
+    }
+
     /* void insert() {} */
     /* void erase() {} */
-    void clear() {
+    void clear() noexcept {
         for (T* i = begin_; i != end_; ++i) {
             std::allocator_traits<std::allocator<T>>::destroy(m_allocator, i);
         }
@@ -96,14 +130,45 @@ public:
         end_cap_ = new_data + new_size;
     }
 
-    // scuffed iterator
-    T* begin() { return begin_; }
-    T* end() { return end_; }
+    void swap(vector& o) {
+        std::swap(m_allocator, o.m_allocator);
+        std::swap(begin_, o.begin_);
+        std::swap(end_, o.end_);
+        std::swap(end_cap_, o.end_cap_);
+    }
 
-    const T* begin() const { return begin_; }
-    const T* end() const { return end_; }
-    const T* cbegin() const { return begin_; }
-    const T* cend() const { return end_; }
+    // access methods
+    T& operator[](size_t index) {
+        return begin_[index];
+    }
+
+    const T& operator[](size_t index) const {
+        return begin_[index];
+    }
+
+    T& at(size_t index) {
+        if (index >= size()) {
+            throw std::out_of_range("index >= size()");
+        }
+        return begin_[index];
+    }
+
+    T& front() {
+        return *begin_;
+    }
+
+    T& back() {
+        return *(end_ - 1);
+    }
+
+    // scuffed iterator
+    iterator begin() { return begin_; }
+    iterator end() { return end_; }
+
+    const_iterator begin() const { return begin_; }
+    const_iterator end() const { return end_; }
+    const_iterator cbegin() const { return begin_; }
+    const_iterator cend() const { return end_; }
 
 private:
     void reallocate() {
@@ -117,7 +182,7 @@ private:
         end_cap_ = new_data + m_size * 2;
     }
 
-    std::allocator<T> m_allocator;
+    allocator_type m_allocator;
 
     T* begin_ = nullptr;
     T* end_ = nullptr;
