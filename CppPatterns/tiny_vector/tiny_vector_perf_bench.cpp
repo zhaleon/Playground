@@ -1,5 +1,6 @@
 #include "tiny_vector.hpp"
 #include <stdlib.h>
+#include <ctime>
 
 void random_push_pop() {
     tiny::vector<char> v;
