@@ -27,6 +27,7 @@
  *  - reverse iterator methods
  *  - use concepts "requires copy_constructible" to have std::is_copy_assignable be correct
  *    alternatively use the older SFINAE trick
+ *  - inspect assembly better / more
  */
 
 namespace tiny {
@@ -90,6 +91,26 @@ public:
         if (end_ == end_cap_) {
             reallocate();
         }
+
+        /*
+         * Fast path with no resize
+         *
+         * rdi    = this
+         * rsi    = &value
+         * r15    = end_
+         *
+         * LBB11_10:
+         * movl	(%rsi), %eax   // value -> eax
+         * movl	%eax, (%r15)   // write to end_
+         * addq	$4, %r15       // increment end_ by integer size
+         * movq	%r15, 16(%rdi) // write it back to this->end_
+         * addq	$24, %rsp
+         * retq
+         *
+         * At least one load was necessary for value into eax
+         * At least one store is necessary for value at end_
+         * Since end_ pointer was already in a register r15 just increment than store
+         */
 
         std::allocator_traits<std::allocator<T>>::construct(m_allocator, end_, value);
         ++end_;
@@ -201,7 +222,6 @@ private:
     void reallocate() {
         const size_t m_size = end_cap_ - begin_;
         T* new_data = m_allocator.allocate(m_size * 2);
-        /* std::uninitialized_copy(begin_, end_, new_data); */
         std::uninitialized_move(begin_, end_, new_data);
         m_allocator.deallocate(begin_, m_size);
 
