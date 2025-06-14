@@ -1,0 +1,40 @@
+cc_library(
+    name = "lru_cache",
+    hdrs = ["lru_cache.hpp"],
+    srcs = [],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "test",
+    srcs = ["lru_perf.cpp"],
+    deps = [
+        ":lru_cache",
+    ]
+)
+
+# cc_test(
+#     name = "tiny_vector_test",
+#     srcs = ["tiny_vector_test.cpp"],
+#     deps = [
+#         ":tiny_vector",
+#         # "@googletest//:gtest_main",
+#         "@googletest//:gtest",
+#         "@fuzztest//fuzztest",
+#         "@fuzztest//fuzztest:fuzztest_gtest_main",
+#     ],
+#     linkopts = [
+#         "-fsanitize=address",
+#         "-fsanitize=undefined",
+#     ],
+#     size = "small",
+# )
+
+# cc_test(
+#     name = "tiny_vector_perf_bench",
+#     srcs = ["tiny_vector_perf_bench.cpp"],
+#     deps = [
+#         ":tiny_vector",
+#     ],
+#     size = "small",
+# )
